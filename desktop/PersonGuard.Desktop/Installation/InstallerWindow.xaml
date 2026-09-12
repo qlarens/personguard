@@ -1,0 +1,63 @@
+<Window x:Class="PersonGuard.Desktop.Installation.InstallerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Установка PersonGuard" Width="760" Height="670"
+        MinWidth="760" MinHeight="670" MaxWidth="760" MaxHeight="670"
+        ResizeMode="NoResize" WindowStartupLocation="CenterScreen"
+        Background="{StaticResource Bg}" Foreground="{StaticResource Text}"
+        FontFamily="Segoe UI Variable Text, Segoe UI"
+        Closing="Window_Closing">
+  <Grid Margin="38,30,38,28">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <Grid>
+      <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+      <Border Width="54" Height="58" CornerRadius="15" Background="{StaticResource Blue}" Margin="0,0,18,0">
+        <TextBlock Text="P" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="25" FontWeight="Bold" />
+      </Border>
+      <StackPanel Grid.Column="1" VerticalAlignment="Center">
+        <TextBlock Text="PERSONGUARD" Foreground="#7896FF" FontSize="11" FontWeight="Bold" />
+        <TextBlock x:Name="HeadingText" Text="Установка PersonGuard" FontSize="27" FontWeight="Bold" Margin="0,4,0,0" />
+      </StackPanel>
+    </Grid>
+
+    <Border Grid.Row="1" Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}" BorderThickness="1"
+            CornerRadius="12" Margin="0,25,0,18" Padding="18,15">
+      <StackPanel>
+        <TextBlock Text="Локальный зашифрованный менеджер паролей для Windows 11." FontSize="14" />
+        <TextBlock x:Name="InstallPathText" Foreground="{StaticResource Muted}" FontSize="12" Margin="0,7,0,0" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+
+    <Grid Grid.Row="2">
+      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+      <TextBlock Text="ЛИЦЕНЗИЯ CC BY-NC-ND 4.0" Foreground="#7896FF" FontSize="11" FontWeight="Bold" Margin="1,0,0,9" />
+      <TextBox x:Name="LicenseTextBox" Grid.Row="1" IsReadOnly="True" TextWrapping="Wrap"
+               VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+               FontFamily="Cascadia Mono, Consolas" FontSize="12" Padding="15" />
+    </Grid>
+
+    <StackPanel Grid.Row="3" Margin="1,18,0,17">
+      <CheckBox x:Name="AcceptLicenseCheckBox" Content="Я принимаю условия лицензии CC BY-NC-ND 4.0"
+                Checked="AcceptLicense_Changed" Unchecked="AcceptLicense_Changed" />
+      <CheckBox x:Name="DesktopShortcutCheckBox" Content="Создать ярлык на рабочем столе" IsChecked="True" Margin="0,11,0,0" />
+      <CheckBox x:Name="LaunchCheckBox" Content="Запустить PersonGuard после установки" IsChecked="True" Margin="0,11,0,0" />
+    </StackPanel>
+
+    <Grid Grid.Row="4">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <StackPanel VerticalAlignment="Center">
+        <TextBlock x:Name="StatusText" Text="Для установки примите условия лицензии." Foreground="{StaticResource Muted}" FontSize="12" />
+        <ProgressBar x:Name="InstallProgress" Height="4" Margin="0,8,20,0" IsIndeterminate="True" Visibility="Collapsed" />
+      </StackPanel>
+      <Button x:Name="CancelButton" Grid.Column="1" Style="{StaticResource GhostButton}" Content="Отмена" Click="Cancel_Click" Margin="0,0,10,0" />
+      <Button x:Name="InstallButton" Grid.Column="2" Style="{StaticResource PrimaryButton}" Content="Установить" Click="Install_Click" IsEnabled="False" MinWidth="132" />
+    </Grid>
+  </Grid>
+</Window>

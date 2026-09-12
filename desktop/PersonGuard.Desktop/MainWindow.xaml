@@ -1,0 +1,250 @@
+<Window x:Class="PersonGuard.Desktop.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="clr-namespace:PersonGuard.Desktop.Models"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="PersonGuard" Width="1260" Height="820" MinWidth="980" MinHeight="680"
+        WindowStyle="None" ResizeMode="CanResize" Background="{StaticResource Bg}"
+        Foreground="{StaticResource Text}" FontFamily="Segoe UI Variable Text, Segoe UI"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType" TextOptions.TextHintingMode="Fixed"
+        SourceInitialized="Window_SourceInitialized" Loaded="Window_Loaded" Closing="Window_Closing"
+        StateChanged="Window_StateChanged" Deactivated="Window_Deactivated" PreviewMouseDown="ActivityDetected" PreviewKeyDown="ActivityDetected">
+  <shell:WindowChrome.WindowChrome>
+    <shell:WindowChrome CaptionHeight="0" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False" />
+  </shell:WindowChrome.WindowChrome>
+  <Window.Resources>
+    <models:NonEmptyStringToVisibilityConverter x:Key="NonEmptyToVisibility" />
+    <BooleanToVisibilityConverter x:Key="BooleanToVisibility" />
+    <Style x:Key="Eyebrow" TargetType="TextBlock">
+      <Setter Property="Foreground" Value="#7896FF" /><Setter Property="FontSize" Value="11" />
+      <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+    <Style x:Key="PageTitle" TargetType="TextBlock">
+      <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
+      <Setter Property="FontSize" Value="28" /><Setter Property="FontWeight" Value="Bold" />
+    </Style>
+  </Window.Resources>
+
+  <Border BorderBrush="#283246" BorderThickness="1" Background="{StaticResource Bg}">
+    <Grid>
+      <Grid.RowDefinitions><RowDefinition Height="46"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+
+      <Border Grid.Row="0" Background="#090D15" BorderBrush="#202839" BorderThickness="0,0,0,1" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+        <Grid>
+          <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0">
+            <Border Width="25" Height="28" CornerRadius="7" Background="{StaticResource Blue}" Margin="0,0,10,0">
+              <TextBlock Text="P" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" FontWeight="Bold" />
+            </Border>
+            <TextBlock Text="PersonGuard" VerticalAlignment="Center" FontSize="14" FontWeight="SemiBold" />
+            <Border Margin="12,0,0,0" Background="#13233A" CornerRadius="5" Padding="7,3">
+              <TextBlock Text="DESKTOP · PGD2" Foreground="#6F87C5" FontSize="9" FontWeight="Bold" />
+            </Border>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Style="{StaticResource IconButton}" Background="Transparent" BorderThickness="0" Content="—" Click="Minimize_Click" />
+            <Button Style="{StaticResource IconButton}" Background="Transparent" BorderThickness="0" Content="□" Click="Maximize_Click" />
+            <Button Style="{StaticResource IconButton}" Background="Transparent" BorderThickness="0" Content="×" Click="Close_Click" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <Grid Grid.Row="1">
+        <Grid x:Name="WelcomeView" Background="{StaticResource Bg}">
+          <Grid.ColumnDefinitions><ColumnDefinition Width="1.3*"/><ColumnDefinition Width="0.7*"/></Grid.ColumnDefinitions>
+          <Grid Grid.Column="0" Margin="70,50,45,60">
+            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+            <StackPanel Orientation="Horizontal"><Ellipse Width="7" Height="7" Fill="{StaticResource Cyan}" Margin="0,0,8,0"/><TextBlock Text="НАТИВНОЕ ПРИЛОЖЕНИЕ · БЕЗ СЕТИ" Style="{StaticResource Eyebrow}" /></StackPanel>
+            <Grid Grid.Row="1">
+              <Canvas Opacity="0.38" IsHitTestVisible="False">
+                <Ellipse Width="340" Height="220" Canvas.Left="250" Canvas.Top="30" Stroke="#31477E" StrokeThickness="1" />
+                <Ellipse Width="260" Height="300" Canvas.Left="290" Canvas.Top="-10" Stroke="#245E66" StrokeThickness="1" />
+              </Canvas>
+              <StackPanel VerticalAlignment="Center" MaxWidth="720" HorizontalAlignment="Left">
+                <TextBlock FontFamily="Segoe UI Variable Display, Segoe UI" FontSize="58" FontWeight="Bold" LineHeight="71"><Run Text="Ваши секреты"/><LineBreak/><Run Text="не покидают устройство."/></TextBlock>
+                <TextBlock Text="Argon2id, AES‑256‑GCM, Windows Hello и системная защита памяти. Никакого WebView, облака и фоновых соединений." Foreground="{StaticResource Muted}" FontSize="16" TextWrapping="Wrap" LineHeight="27" MaxWidth="650" Margin="0,24,0,0" />
+              </StackPanel>
+            </Grid>
+            <StackPanel Grid.Row="2" Orientation="Horizontal">
+              <TextBlock Text="ARGON2ID · 128 MiB" Foreground="#657084" FontSize="11" FontWeight="SemiBold" />
+              <TextBlock Text="  •  " Foreground="#344054"/><TextBlock Text="AES‑256‑GCM" Foreground="#657084" FontSize="11" FontWeight="SemiBold" />
+              <TextBlock Text="  •  " Foreground="#344054"/><TextBlock Text="WINDOWS DPAPI" Foreground="#657084" FontSize="11" FontWeight="SemiBold" />
+            </StackPanel>
+          </Grid>
+
+          <Border Grid.Column="1" Background="{StaticResource Panel}" BorderBrush="#202839" BorderThickness="1,0,0,0" Padding="54">
+            <StackPanel VerticalAlignment="Center">
+              <TextBlock Text="ЗАЩИЩЁННОЕ ХРАНИЛИЩЕ" Style="{StaticResource Eyebrow}" />
+              <TextBlock Text="Откройте сейф" Style="{StaticResource PageTitle}" FontSize="34" Margin="0,10,0,8" />
+              <TextBlock Text="Каждый .pgd использует собственный мастер‑пароль. Без него содержимое и структура записей не раскрываются." Foreground="{StaticResource Muted}" TextWrapping="Wrap" LineHeight="23" Margin="0,0,0,28" />
+              <Button Style="{StaticResource PrimaryButton}" Height="68" HorizontalContentAlignment="Left" Click="CreateVault_Click">
+                <StackPanel Orientation="Horizontal"><TextBlock Text="＋" FontSize="22" Margin="0,0,14,0"/><StackPanel><TextBlock Text="Создать хранилище" FontWeight="Bold"/><TextBlock Text="Новый файл PGD2" Foreground="#D2DCFF" FontSize="11" Margin="0,3,0,0"/></StackPanel></StackPanel>
+              </Button>
+              <Button Style="{StaticResource GhostButton}" Height="68" HorizontalContentAlignment="Left" Margin="0,11,0,0" Click="OpenVault_Click">
+                <StackPanel Orientation="Horizontal"><TextBlock Text="↗" FontSize="20" Margin="0,0,15,0"/><StackPanel><TextBlock Text="Открыть .pgd" FontWeight="Bold"/><TextBlock Text="PGD2 и миграция PGD1" Foreground="{StaticResource Muted}" FontSize="11" Margin="0,3,0,0"/></StackPanel></StackPanel>
+              </Button>
+              <Border Style="{StaticResource Card}" Margin="0,28,0,0" Background="#0E1622">
+                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="35"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><TextBlock Text="◈" Foreground="{StaticResource Cyan}" FontSize="22"/><StackPanel Grid.Column="1"><TextBlock Text="Нулевое знание" FontWeight="SemiBold"/><TextBlock Text="Мастер‑пароли не сохраняются. Восстановление невозможно." Foreground="{StaticResource Muted}" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"/></StackPanel></Grid>
+              </Border>
+            </StackPanel>
+          </Border>
+        </Grid>
+
+        <Grid x:Name="VaultView" Visibility="Collapsed">
+          <Grid.ColumnDefinitions><ColumnDefinition Width="258"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+          <Border Grid.Column="0" Background="#0B0F18" BorderBrush="#202839" BorderThickness="0,0,1,0">
+            <Grid Margin="14,16">
+              <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+              <Border Grid.Row="0" Style="{StaticResource Card}" Padding="12" Margin="0,0,0,15">
+                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="38"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                  <Border Width="32" Height="32" CornerRadius="8" Background="#182544"><TextBlock Text="◇" Foreground="#7D9AFF" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                  <StackPanel Grid.Column="1" Margin="10,0,0,0"><TextBlock Text="ТЕКУЩИЙ СЕЙФ" Foreground="#667085" FontSize="9" FontWeight="Bold"/><TextBlock x:Name="VaultNameText" Text="Мои пароли" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Margin="0,3,0,0"/></StackPanel>
+                </Grid>
+              </Border>
+              <StackPanel Grid.Row="1">
+                <Button x:Name="VaultNavButton" Style="{StaticResource NavButton}" Background="#14203A" Foreground="White" Content="▦     Хранилище" Click="ShowVaultPage_Click" />
+                <Button x:Name="GraphNavButton" Style="{StaticResource NavButton}" Content="⌘     Схема связей" Click="ShowGraphPage_Click" />
+                <Button x:Name="SecurityNavButton" Style="{StaticResource NavButton}" Content="⬡     Безопасность" Click="ShowSecurityPage_Click" />
+              </StackPanel>
+              <TextBlock Grid.Row="2" Text="ГРУППЫ ПО EMAIL" Foreground="#566174" FontSize="10" FontWeight="Bold" Margin="12,28,0,10" />
+              <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
+                <ItemsControl x:Name="GroupsList">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type models:EmailGroup}">
+                      <Button Style="{StaticResource NavButton}" HorizontalContentAlignment="Stretch" Tag="{Binding Email}" Click="Group_Click" ToolTip="{Binding Email}">
+                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="30"/><ColumnDefinition Width="*"/><ColumnDefinition Width="30"/></Grid.ColumnDefinitions>
+                          <Border Width="24" Height="24" CornerRadius="6" Background="#344C82"><TextBlock Text="{Binding Initial}" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                          <TextBlock Grid.Column="1" Text="{Binding Email}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12" Margin="8,0"/>
+                          <TextBlock Grid.Column="2" Text="{Binding Count}" Foreground="#637086" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11"/>
+                        </Grid>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+              <StackPanel Grid.Row="4">
+                <Border BorderBrush="#203047" BorderThickness="0,1,0,0" Margin="0,10,0,10"/>
+                <TextBlock Text="▰ ▰ ▰ ▰ ▰" Foreground="#43C493" FontSize="10" Margin="12,0,0,6"/>
+                <TextBlock Text="ЛОКАЛЬНАЯ ЗАЩИТА АКТИВНА" Foreground="#586577" FontSize="9" FontWeight="Bold" Margin="12,0,0,10"/>
+                <Button Style="{StaticResource NavButton}" Content="⌾     Заблокировать сейф" Click="LockVault_Click" />
+              </StackPanel>
+            </Grid>
+          </Border>
+
+          <Grid Grid.Column="1">
+            <Grid.RowDefinitions><RowDefinition Height="82"/><RowDefinition Height="36"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+            <Border Grid.Row="0" BorderBrush="#202839" BorderThickness="0,0,0,1" Background="#0B1019">
+              <Grid Margin="34,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center"><TextBlock x:Name="BreadcrumbText" Text="PERSONGUARD / ХРАНИЛИЩЕ" Style="{StaticResource Eyebrow}" FontSize="9"/><TextBlock x:Name="PageTitleText" Text="Все записи" Style="{StaticResource PageTitle}" FontSize="24" Margin="0,3,0,0"/></StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                  <TextBox x:Name="SearchBox" Width="270" Height="40" TextChanged="SearchBox_TextChanged" ToolTip="Поиск по сайтам и логинам" />
+                  <Button Style="{StaticResource GhostButton}" Content="↓  Сохранить .pgd" Margin="9,0,0,0" Click="SaveVault_Click" />
+                  <Button x:Name="AddEntryButton" Style="{StaticResource PrimaryButton}" Content="＋  Добавить запись" Margin="9,0,0,0" Click="AddEntry_Click" />
+                </StackPanel>
+              </Grid>
+            </Border>
+            <Border Grid.Row="1" Background="#0C111B" BorderBrush="#202839" BorderThickness="0,0,0,1">
+              <Grid Margin="34,0"><StackPanel Orientation="Horizontal" VerticalAlignment="Center"><Ellipse Width="6" Height="6" Fill="#57D69A" Margin="0,0,7,0"/><TextBlock Text="Сейф открыт" Foreground="#748197" FontSize="11"/><TextBlock x:Name="DirtyText" Text="Все изменения сохранены" Foreground="#5D687A" FontSize="11" Margin="16,0,0,0"/></StackPanel><TextBlock x:Name="FilePathText" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="#4E596B" FontSize="10" TextTrimming="CharacterEllipsis" MaxWidth="420"/></Grid>
+            </Border>
+
+            <Grid Grid.Row="2">
+              <ScrollViewer x:Name="EntriesPage" VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="34,27,34,42">
+                  <Grid Margin="0,0,0,24"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,7,0"><StackPanel><TextBlock Text="ВСЕ ЗАПИСИ" Foreground="#697589" FontSize="10" FontWeight="Bold"/><StackPanel Orientation="Horizontal" Margin="0,8,0,0"><TextBlock x:Name="TotalMetric" Text="00" FontSize="27" FontWeight="Bold"/><TextBlock Text="  в этом сейфе" Foreground="#596577" FontSize="11" VerticalAlignment="Bottom" Margin="0,0,0,4"/></StackPanel></StackPanel></Border>
+                    <Border Grid.Column="1" Style="{StaticResource Card}" Margin="7,0"><StackPanel><TextBlock Text="ГРУППЫ EMAIL" Foreground="#697589" FontSize="10" FontWeight="Bold"/><StackPanel Orientation="Horizontal" Margin="0,8,0,0"><TextBlock x:Name="GroupsMetric" Text="00" FontSize="27" FontWeight="Bold"/><TextBlock Text="  связанных профилей" Foreground="#596577" FontSize="11" VerticalAlignment="Bottom" Margin="0,0,0,4"/></StackPanel></StackPanel></Border>
+                    <Border Grid.Column="2" Style="{StaticResource Card}" Margin="7,0,0,0"><StackPanel><TextBlock Text="НАДЁЖНОСТЬ" Foreground="#697589" FontSize="10" FontWeight="Bold"/><StackPanel Orientation="Horizontal" Margin="0,8,0,0"><TextBlock x:Name="HealthMetric" Text="—" FontSize="27" FontWeight="Bold"/><TextBlock Text="  сильных паролей" Foreground="#596577" FontSize="11" VerticalAlignment="Bottom" Margin="0,0,0,4"/></StackPanel></StackPanel></Border>
+                  </Grid>
+                  <Border x:Name="PasswordAlertsPanel" Style="{StaticResource Card}" Visibility="Collapsed" Background="#151820" BorderBrush="#3A3540" Margin="0,0,0,16">
+                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="46"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                      <Border Width="36" Height="36" CornerRadius="10" Background="#51212D" VerticalAlignment="Top"><TextBlock Text="!" Foreground="#FF8296" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                      <StackPanel Grid.Column="1" Margin="2,0,18,0">
+                        <TextBlock Text="ОПАСНОСТЬ: ПОВТОРЯЮЩИЕСЯ ПАРОЛИ" Foreground="#FF8296" FontSize="10" FontWeight="Bold"/>
+                        <ItemsControl x:Name="PasswordAlertsList" Margin="0,7,0,0">
+                          <ItemsControl.ItemTemplate><DataTemplate DataType="{x:Type models:PasswordReuseAlert}"><Border Background="{Binding RiskBackground}" BorderBrush="{Binding RiskAccent}" BorderThickness="1,0,0,0" Padding="9,5" Margin="0,0,0,5"><TextBlock Text="{Binding Message}" Foreground="{Binding RiskAccent}" TextWrapping="Wrap" LineHeight="19"/></Border></DataTemplate></ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+                      <Button Grid.Column="2" Style="{StaticResource GhostButton}" Padding="12,8" Content="Показать записи" Tag="weak" Click="Filter_Click" VerticalAlignment="Center"/>
+                    </Grid>
+                  </Border>
+                  <Grid Margin="0,0,0,15"><TextBlock x:Name="ResultText" Text="0 записей" Foreground="#738096" VerticalAlignment="Center"/><StackPanel Orientation="Horizontal" HorizontalAlignment="Right"><Button Style="{StaticResource GhostButton}" Padding="11,7" Content="Все" Tag="all" Click="Filter_Click"/><Button Style="{StaticResource GhostButton}" Padding="11,7" Content="Избранные" Tag="favorite" Margin="6,0,0,0" Click="Filter_Click"/><Button Style="{StaticResource GhostButton}" Padding="11,7" Content="Требуют внимания" Tag="weak" Margin="6,0,0,0" Click="Filter_Click"/></StackPanel></Grid>
+                  <Border x:Name="EmptyState" Style="{StaticResource Card}" MinHeight="280" BorderBrush="#263249" BorderThickness="1" Background="#0D131E">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"><Border Width="54" Height="54" CornerRadius="14" Background="#162446"><TextBlock Text="＋" Foreground="#7192FF" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><TextBlock Text="Сейф пока пуст" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,15,0,7"/><TextBlock Text="Добавьте первый сайт — email‑группы появятся автоматически." Foreground="{StaticResource Muted}"/><Button Style="{StaticResource PrimaryButton}" Content="Добавить первую запись" HorizontalAlignment="Center" Margin="0,18,0,0" Click="AddEntry_Click"/></StackPanel>
+                  </Border>
+                  <ItemsControl x:Name="EntriesList">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate DataType="{x:Type models:VaultEntry}">
+                        <Border Style="{StaticResource Card}" Width="305" MinHeight="225" Margin="0,0,12,12" Background="{Binding RiskBackground}" BorderBrush="{Binding SecurityAccent}" BorderThickness="1.25">
+                          <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="44"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                              <Border Width="38" Height="38" CornerRadius="9" Background="{Binding RiskBackground}" BorderBrush="{Binding SecurityAccent}" BorderThickness="1.5"><TextBlock Text="{Binding SiteInitials}" Foreground="{Binding SecurityAccent}" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                              <StackPanel Grid.Column="1" Margin="10,0,0,0"><TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><Button Content="{Binding Host}" Tag="{Binding}" IsEnabled="{Binding HasUrl}" Click="OpenEntryUrl_Click" Foreground="#7F91B2" Background="Transparent" BorderThickness="0" Padding="0" HorizontalAlignment="Left" HorizontalContentAlignment="Left" FontSize="11" FontWeight="Normal" Margin="0,4,0,0" ToolTip="Открыть сайт в браузере"/></StackPanel>
+                              <StackPanel Grid.Column="2" Orientation="Horizontal"><Button Style="{StaticResource IconButton}" Background="Transparent" BorderThickness="0" Content="{Binding FavoriteGlyph}" Tag="{Binding}" Click="Favorite_Click"/><Button Style="{StaticResource IconButton}" Background="Transparent" BorderThickness="0" Content="•••" Tag="{Binding}" Click="EditEntry_Click"/></StackPanel>
+                            </Grid>
+                            <StackPanel Grid.Row="1" Margin="0,16,0,0">
+                              <Grid Margin="0,0,0,10"><TextBlock Text="{Binding Username}" Foreground="#96A1B4" TextTrimming="CharacterEllipsis"/><Button HorizontalAlignment="Right" Style="{StaticResource IconButton}" Width="30" Height="28" Content="▣" Tag="{Binding}" Click="CopyUsername_Click"/></Grid>
+                              <Grid><TextBlock Text="{Binding SignInSummary}" Foreground="#77849A" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/><StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Visibility="{Binding UsesPassword, Converter={StaticResource BooleanToVisibility}}"><Button Style="{StaticResource IconButton}" Width="30" Height="28" Content="◉" Tag="{Binding}" Click="RevealPassword_Click"/><Button Style="{StaticResource IconButton}" Width="30" Height="28" Content="▣" Tag="{Binding}" Click="CopyPassword_Click"/></StackPanel></Grid>
+                              <Grid Margin="0,10,0,0" Visibility="{Binding Phone, Converter={StaticResource NonEmptyToVisibility}}"><TextBlock Text="{Binding Phone}" Foreground="#77849A" TextTrimming="CharacterEllipsis"/><Button HorizontalAlignment="Right" Style="{StaticResource IconButton}" Width="30" Height="28" Content="▣" Tag="{Binding}" Click="CopyPhone_Click"/></Grid>
+                              <Border Margin="0,11,0,0" Padding="9,7" CornerRadius="7" Background="{Binding RiskBackground}" BorderBrush="{Binding SecurityAccent}" BorderThickness="1" Visibility="{Binding HasReusedPassword, Converter={StaticResource BooleanToVisibility}}"><TextBlock Text="{Binding PasswordReuseWarning}" Foreground="{Binding SecurityAccent}" FontSize="10" TextWrapping="Wrap" LineHeight="15"/></Border>
+                            </StackPanel>
+                            <Grid Grid.Row="2" Margin="0,15,0,0"><Border Background="#16213A" CornerRadius="5" Padding="7,4" HorizontalAlignment="Left" MaxWidth="190"><TextBlock Text="{Binding EmailGroup}" Foreground="#7890D8" FontSize="10" TextTrimming="CharacterEllipsis"/></Border><TextBlock Text="{Binding StrengthLabel}" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{Binding SecurityAccent}" FontSize="9" FontWeight="Bold"/></Grid>
+                          </Grid>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </ScrollViewer>
+
+              <Grid x:Name="GraphPage" Visibility="Collapsed" Margin="34,28,34,38">
+                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                <Grid Margin="0,0,0,20"><StackPanel><TextBlock Text="КАРТА УЧЁТНЫХ ЗАПИСЕЙ" Style="{StaticResource Eyebrow}"/><TextBlock Text="Схема‑паутина" Style="{StaticResource PageTitle}" Margin="0,8,0,5"/><TextBlock Text="Цвет записи показывает число совпадений, цвет группы — средний риск внутри неё." Foreground="{StaticResource Muted}"/></StackPanel><StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom"><Ellipse Width="8" Height="8" Fill="#57D69A"/><TextBlock Text="  Всё хорошо     " Foreground="{StaticResource Muted}" FontSize="11"/><Ellipse Width="8" Height="8" Fill="#E3C557"/><TextBlock Text="  2     " Foreground="{StaticResource Muted}" FontSize="11"/><Ellipse Width="8" Height="8" Fill="#F39A4B"/><TextBlock Text="  3     " Foreground="{StaticResource Muted}" FontSize="11"/><Ellipse Width="8" Height="8" Fill="#FF5C72"/><TextBlock Text="  4+ совпадения" Foreground="{StaticResource Muted}" FontSize="11"/></StackPanel></Grid>
+                <Border Grid.Row="1" Style="{StaticResource Card}" Padding="0" Background="#0C121C" ClipToBounds="True">
+                  <Grid x:Name="GraphViewport" Background="Transparent" Cursor="SizeAll" ClipToBounds="True" SizeChanged="GraphCanvas_SizeChanged" MouseWheel="GraphViewport_MouseWheel" MouseLeftButtonDown="GraphViewport_MouseLeftButtonDown" MouseMove="GraphViewport_MouseMove" MouseLeftButtonUp="GraphViewport_MouseLeftButtonUp" LostMouseCapture="GraphViewport_LostMouseCapture">
+                    <Canvas x:Name="GraphCanvas" HorizontalAlignment="Left" VerticalAlignment="Top" Background="#0C121C" UseLayoutRounding="True" SnapsToDevicePixels="True">
+                      <Canvas.RenderTransform><MatrixTransform x:Name="GraphTransform"/></Canvas.RenderTransform>
+                    </Canvas>
+                    <StackPanel x:Name="GraphEmpty" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"><TextBlock Text="⌘" Foreground="#6680BC" FontSize="34" HorizontalAlignment="Center"/><TextBlock Text="Связи появятся здесь" FontWeight="SemiBold" Margin="0,10,0,4"/><TextBlock Text="Добавьте записи с email или телефоном" Foreground="{StaticResource Muted}" FontSize="12"/></StackPanel>
+                    <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="15" Background="#D9121925" CornerRadius="9" Padding="10,7" IsHitTestVisible="False"><TextBlock Text="ЛКМ + движение — обзор  ·  Колесо — масштаб  ·  Двойной клик — вписать" Foreground="#71809A" FontSize="10"/></Border>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="15"><Button Style="{StaticResource GhostButton}" Padding="11,7" Content="Вписать" Click="GraphFit_Click"/><Button Style="{StaticResource IconButton}" Content="−" Margin="7,0,0,0" Click="GraphMinus_Click"/><TextBlock x:Name="GraphZoomText" Text="100%" VerticalAlignment="Center" Margin="11,0" Foreground="{StaticResource Muted}" FontSize="11"/><Button Style="{StaticResource IconButton}" Content="＋" Click="GraphPlus_Click"/></StackPanel>
+                  </Grid>
+                </Border>
+              </Grid>
+
+              <ScrollViewer x:Name="SecurityPage" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                <Grid Margin="34,32,34,50" MaxWidth="940" HorizontalAlignment="Center"><Grid.ColumnDefinitions><ColumnDefinition Width="310"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                  <StackPanel Margin="0,0,48,0"><TextBlock Text="ЗАЩИТА УСТРОЙСТВА" Style="{StaticResource Eyebrow}"/><TextBlock Text="Безопасность" Style="{StaticResource PageTitle}" Margin="0,9,0,9"/><TextBlock Text="Защита окна, памяти и локального запуска. Настройки связаны с текущим пользователем Windows через DPAPI." Foreground="{StaticResource Muted}" TextWrapping="Wrap" LineHeight="23"/><Border Style="{StaticResource Card}" Background="#0D1621" Margin="0,25,0,0"><StackPanel><TextBlock Text="ПОДПИСЬ СБОРКИ" Foreground="#687487" FontSize="9" FontWeight="Bold"/><TextBlock x:Name="SignatureStatusText" Text="Проверка…" Foreground="#9BA8BA" TextWrapping="Wrap" Margin="0,7,0,0"/></StackPanel></Border></StackPanel>
+                  <StackPanel Grid.Column="1">
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,10"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="50"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><Border Width="40" Height="40" CornerRadius="10" Background="#172546"><TextBlock Text="⌾" Foreground="#7E9AFF" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><StackPanel Grid.Column="1"><TextBlock Text="Пароль приложения" FontWeight="SemiBold"/><TextBlock x:Name="AppPasswordStatus" Text="Не настроен" Foreground="{StaticResource Muted}" FontSize="11" Margin="0,4,0,0"/></StackPanel><Button Grid.Column="2" Style="{StaticResource GhostButton}" Content="Настроить" Click="ConfigureAppPassword_Click"/></Grid></Border>
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,10"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="50"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><Border Width="40" Height="40" CornerRadius="10" Background="#172546"><TextBlock Text="◈" Foreground="#7E9AFF" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><StackPanel Grid.Column="1"><TextBlock Text="Windows Hello" FontWeight="SemiBold"/><TextBlock x:Name="HelloStatusText" Text="Проверка доступности…" Foreground="{StaticResource Muted}" FontSize="11" Margin="0,4,0,0"/></StackPanel><Button x:Name="HelloButton" Grid.Column="2" Style="{StaticResource GhostButton}" Content="Включить" Click="ToggleHello_Click"/></Grid></Border>
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,10"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Защита окна от захвата" FontWeight="SemiBold"/><TextBlock Text="Скрывать окно от стандартных API записи экрана." Foreground="{StaticResource Muted}" FontSize="11" Margin="0,4,0,0"/></StackPanel><CheckBox x:Name="CaptureProtectionCheck" Grid.Column="1" Content="Включена" Click="SecuritySettingChanged"/></Grid></Border>
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,10"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Режим без буфера обмена" FontWeight="SemiBold"/><TextBlock Text="По умолчанию копирование секретов полностью запрещено." Foreground="{StaticResource Muted}" FontSize="11" Margin="0,4,0,0"/></StackPanel><CheckBox x:Name="ClipboardCheck" Grid.Column="1" Content="Разрешить на 20 с" Click="SecuritySettingChanged"/></Grid></Border>
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,10"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Блокировка при потере фокуса" FontWeight="SemiBold"/><TextBlock Text="Закрывать сейф при переключении на другое окно." Foreground="{StaticResource Muted}" FontSize="11" Margin="0,4,0,0"/></StackPanel><CheckBox x:Name="FocusLockCheck" Grid.Column="1" Content="Строгий режим" Click="SecuritySettingChanged"/></Grid></Border>
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,10"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Автоблокировка" FontWeight="SemiBold"/><TextBlock Text="Очистить расшифрованный сейф после бездействия." Foreground="{StaticResource Muted}" FontSize="11" Margin="0,4,0,0"/></StackPanel><ComboBox x:Name="AutoLockCombo" Grid.Column="1" Width="135" SelectionChanged="AutoLockCombo_SelectionChanged"><ComboBoxItem Tag="1">1 минута</ComboBoxItem><ComboBoxItem Tag="3">3 минуты</ComboBoxItem><ComboBoxItem Tag="5">5 минут</ComboBoxItem><ComboBoxItem Tag="15">15 минут</ComboBoxItem><ComboBoxItem Tag="0">Выключена</ComboBoxItem></ComboBox></Grid></Border>
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,10"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Мастер‑пароль файла" FontWeight="SemiBold"/><TextBlock Text="Перешифровать ключ сейфа новым Argon2id‑ключом." Foreground="{StaticResource Muted}" FontSize="11" Margin="0,4,0,0"/></StackPanel><Button Grid.Column="1" Style="{StaticResource GhostButton}" Content="Изменить" Click="ChangeMasterPassword_Click"/></Grid></Border>
+                    <Border Style="{StaticResource Card}" Background="#0E1920"><TextBlock Text="Повторная авторизация перед показом и копированием секретов включена всегда. Отключить её нельзя." Foreground="#6FC6A2" TextWrapping="Wrap"/></Border>
+                  </StackPanel>
+                </Grid>
+              </ScrollViewer>
+            </Grid>
+          </Grid>
+        </Grid>
+
+        <Grid x:Name="AppLockedView" Visibility="Collapsed" Background="{StaticResource Bg}">
+          <Border Width="440" Style="{StaticResource Card}" Padding="34" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <StackPanel>
+              <Border Width="78" Height="88" CornerRadius="22" Background="#172A58" HorizontalAlignment="Center">
+                <TextBlock Text="⬡" Foreground="#7594FF" FontSize="38" HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <TextBlock Text="ЛОКАЛЬНАЯ ЗАЩИТА" Style="{StaticResource Eyebrow}" HorizontalAlignment="Center" Margin="0,25,0,0" />
+              <TextBlock Text="PersonGuard заблокирован" Style="{StaticResource PageTitle}" FontSize="26" HorizontalAlignment="Center" Margin="0,9,0,7" />
+              <TextBlock Text="Подтвердите пароль приложения и Windows Hello, чтобы продолжить." Foreground="{StaticResource Muted}" TextAlignment="Center" TextWrapping="Wrap" LineHeight="21" />
+              <Button Style="{StaticResource PrimaryButton}" Content="Разблокировать" Margin="0,24,0,0" Click="UnlockApp_Click" />
+            </StackPanel>
+          </Border>
+        </Grid>
+      </Grid>
+    </Grid>
+  </Border>
+</Window>

@@ -1,0 +1,8 @@
+.dotnet/
+.dotnet-install.ps1
+desktop/**/bin/
+desktop/**/obj/
+desktop/artifacts/*
+!desktop/artifacts/*.png
+.sites-runtime/
+desktop.ini

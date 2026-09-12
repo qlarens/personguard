@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#080b12" />
+    <meta name="referrer" content="no-referrer" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none';" />
+    <meta
+      name="description"
+      content="PersonGuard — локальный менеджер паролей с зашифрованными PGD-хранилищами."
+    />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>PersonGuard — локальное хранилище паролей</title>
+  </head>
+  <body>
+    <div class="noise" aria-hidden="true"></div>
+
+    <section class="gate screen is-active" id="welcome-screen" aria-labelledby="welcome-title">
+      <div class="gate-visual">
+        <div class="brand brand-large"><span class="brand-mark">P</span><span>PersonGuard</span></div>
+        <div class="vault-orbit" aria-hidden="true">
+          <span class="orbit orbit-a"></span>
+          <span class="orbit orbit-b"></span>
+          <span class="orbit-dot dot-a"></span>
+          <span class="orbit-dot dot-b"></span>
+          <span class="vault-core"><span></span></span>
+        </div>
+        <div class="gate-copy">
+          <p class="eyebrow">Локально. Зашифровано. Под вашим контролем.</p>
+          <h1 id="welcome-title">Ваши секреты<br />не покидают устройство.</h1>
+          <p>PersonGuard открывает защищённые файлы <strong>.pgd</strong> прямо в браузере. Без облака, синхронизации и скрытой отправки данных.</p>
+        </div>
+        <div class="crypto-strip" aria-label="Параметры защиты">
+          <span>AES‑256‑GCM</span><i></i><span>PBKDF2 · 600K</span><i></i><span>Local only</span>
+        </div>
+      </div>
+
+      <div class="gate-panel">
+        <div class="gate-panel-inner">
+          <p class="step-label">ЗАЩИЩЁННОЕ ХРАНИЛИЩЕ</p>
+          <h2>Откройте сейф</h2>
+          <p class="muted">Создайте новый файл или выберите существующий. Для каждого файла действует собственный мастер‑пароль.</p>
+          <div class="welcome-actions">
+            <button class="btn btn-primary btn-xl" id="create-vault-btn">
+              <span class="btn-icon">＋</span>
+              <span><strong>Создать хранилище</strong><small>Новый зашифрованный файл</small></span>
+            </button>
+            <button class="btn btn-secondary btn-xl" id="open-vault-btn">
+              <span class="btn-icon">↗</span>
+              <span><strong>Открыть .pgd</strong><small>Импорт с вашего устройства</small></span>
+            </button>
+            <input id="file-input" type="file" accept=".pgd,application/octet-stream" hidden />
+          </div>
+          <div class="privacy-note">
+            <span class="privacy-icon">◈</span>
+            <p><strong>Нулевое знание</strong><br />Мастер‑пароль не сохраняется. Восстановить его невозможно — держите резервную копию файла.</p>
+          </div>
+        </div>
+        <p class="version">PERSONGUARD / PGD FORMAT 1.0</p>
+      </div>
+    </section>
+
+    <section class="app-lock screen" id="app-lock-screen" aria-labelledby="app-lock-title">
+      <div class="lock-card">
+        <div class="brand"><span class="brand-mark">P</span><span>PersonGuard</span></div>
+        <div class="lock-emblem"><span></span></div>
+        <p class="step-label">ЛОКАЛЬНАЯ ЗАЩИТА</p>
+        <h1 id="app-lock-title">Приложение заблокировано</h1>
+        <p class="muted">Введите локальный пароль, чтобы продолжить.</p>
+        <form id="app-unlock-form" class="stack-form">
+          <label class="field">
+            <span>Пароль приложения</span>
+            <span class="input-wrap"><input id="app-unlock-password" type="password" autocomplete="current-password" required /><button type="button" class="reveal" data-reveal="app-unlock-password" aria-label="Показать пароль">○</button></span>
+          </label>
+          <p class="form-error" id="app-unlock-error" role="alert"></p>
+          <button class="btn btn-primary btn-block" type="submit">Разблокировать</button>
+        </form>
+      </div>
+    </section>
+
+    <div class="app-shell screen" id="app-screen">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-top">
+          <div class="brand"><span class="brand-mark">P</span><span>PersonGuard</span></div>
+          <button class="icon-btn mobile-close" id="close-sidebar-btn" aria-label="Закрыть меню">×</button>
+        </div>
+        <div class="vault-switcher">
+          <span class="vault-mini-icon">◇</span>
+          <span><small>ТЕКУЩИЙ СЕЙФ</small><strong id="sidebar-vault-name">Моё хранилище</strong></span>
+          <span class="chev">⌄</span>
+        </div>
+        <nav class="nav" aria-label="Основная навигация">
+          <button class="nav-item is-active" data-view="vault"><span>▦</span>Хранилище<em id="nav-count">0</em></button>
+          <button class="nav-item" data-view="schema"><span>⌘</span>Схема связей</button>
+          <button class="nav-item" data-view="security"><span>⬡</span>Безопасность</button>
+        </nav>
+        <div class="group-nav">
+          <div class="section-heading"><span>ГРУППЫ ПО EMAIL</span></div>
+          <div id="group-list" class="group-list"></div>
+        </div>
+        <div class="sidebar-footer">
+          <div class="security-meter"><div><span></span><span></span><span></span><span></span><span></span></div><small>ЛОКАЛЬНОЕ ШИФРОВАНИЕ</small></div>
+          <button class="sidebar-lock" id="lock-vault-btn"><span>⌾</span><span><strong>Заблокировать</strong><small>Очистить данные из памяти</small></span></button>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div class="topbar-left">
+            <button class="icon-btn menu-btn" id="open-sidebar-btn" aria-label="Открыть меню">☰</button>
+            <div><p class="breadcrumb">PERSONGUARD / <span id="breadcrumb">ХРАНИЛИЩЕ</span></p><h1 id="page-title">Все пароли</h1></div>
+          </div>
+          <div class="topbar-actions">
+            <label class="search" id="search-wrap"><span>⌕</span><input id="search-input" type="search" placeholder="Поиск по сайтам и логинам" aria-label="Поиск" /><kbd>⌘ K</kbd></label>
+            <button class="btn btn-ghost" id="save-vault-btn"><span>↓</span><span class="save-label">Сохранить .pgd</span></button>
+            <button class="btn btn-primary" id="add-entry-btn">＋ Добавить пароль</button>
+          </div>
+        </header>
+
+        <div class="status-line">
+          <span class="status-pill"><i></i> Сейф открыт</span>
+          <span id="dirty-indicator">Все изменения сохранены в памяти</span>
+          <span class="status-spacer"></span>
+          <span id="last-updated">Обновлено сейчас</span>
+        </div>
+
+        <section class="view is-active" id="vault-view">
+          <div class="metric-row">
+            <article class="metric-card"><span class="metric-icon blue">▦</span><div><small>ВСЕ ЗАПИСИ</small><strong id="metric-total">0</strong><span>в этом сейфе</span></div></article>
+            <article class="metric-card"><span class="metric-icon cyan">@</span><div><small>ГРУППЫ EMAIL</small><strong id="metric-groups">0</strong><span>связанных профилей</span></div></article>
+            <article class="metric-card"><span class="metric-icon violet">◒</span><div><small>НАДЁЖНОСТЬ</small><strong id="metric-health">—</strong><span id="metric-health-copy">добавьте записи</span></div></article>
+          </div>
+
+          <div class="content-toolbar">
+            <div class="tabs" role="tablist">
+              <button class="tab is-active" data-filter="all">Все <span id="all-tab-count">0</span></button>
+              <button class="tab" data-filter="favorites">Избранные <span id="fav-tab-count">0</span></button>
+              <button class="tab" data-filter="weak">Требуют внимания <span id="weak-tab-count">0</span></button>
+            </div>
+            <div class="toolbar-right"><span id="result-count">0 записей</span><button class="view-toggle is-active" data-layout="grid" aria-label="Плитка">▦</button><button class="view-toggle" data-layout="list" aria-label="Список">☷</button></div>
+          </div>
+
+          <div class="entries-grid" id="entries-grid"></div>
+          <div class="empty-state" id="empty-state">
+            <span class="empty-symbol">＋</span>
+            <h2>Сейф пока пуст</h2>
+            <p>Добавьте первый сайт — запись сразу попадёт в подходящую email‑группу.</p>
+            <button class="btn btn-primary" id="empty-add-btn">Добавить первый пароль</button>
+          </div>
+        </section>
+
+        <section class="view" id="schema-view">
+          <div class="schema-head">
+            <div><p class="step-label">КАРТА УЧЁТНЫХ ЗАПИСЕЙ</p><h2>Схема связей</h2><p class="muted">Email‑группы автоматически объединяют сайты, где используется один адрес.</p></div>
+            <div class="schema-legend"><span><i class="legend-group"></i>Email‑группа</span><span><i class="legend-site"></i>Сайт</span></div>
+          </div>
+          <div class="graph-card">
+            <svg id="vault-graph" role="img" aria-label="Схема группировок паролей"></svg>
+            <div class="graph-empty" id="graph-empty"><span>⌘</span><strong>Связи появятся здесь</strong><small>Добавьте несколько записей с одинаковым email</small></div>
+            <div class="graph-controls"><button id="graph-minus" aria-label="Уменьшить">−</button><span id="graph-zoom">100%</span><button id="graph-plus" aria-label="Увеличить">＋</button><button id="graph-reset" aria-label="Сбросить масштаб">↺</button></div>
+          </div>
+        </section>
+
+        <section class="view" id="security-view">
+          <div class="settings-layout">
+            <div><p class="step-label">ЗАЩИТА УСТРОЙСТВА</p><h2>Безопасность</h2><p class="muted">Настройки действуют только в этом браузере и не содержат данные вашего сейфа.</p></div>
+            <div class="settings-stack">
+              <article class="settings-card">
+                <div class="settings-icon">⌾</div><div><h3>Пароль приложения</h3><p>Запрашивать отдельный пароль до доступа к PersonGuard.</p></div>
+                <button class="btn btn-secondary" id="configure-app-lock-btn">Настроить</button>
+              </article>
+              <article class="settings-card">
+                <div class="settings-icon">◷</div><div><h3>Автоблокировка</h3><p>Закрыть сейф после периода бездействия.</p></div>
+                <select id="autolock-select" aria-label="Время автоблокировки"><option value="1">1 минута</option><option value="3" selected>3 минуты</option><option value="5">5 минут</option><option value="15">15 минут</option><option value="0">Выключена</option></select>
+              </article>
+              <article class="settings-card static"><div class="settings-icon">⌁</div><div><h3>Буфер обмена</h3><p>Скопированные пароли автоматически удаляются через 30 секунд.</p></div><span class="secure-badge">ВСЕГДА</span></article>
+              <article class="settings-card static"><div class="settings-icon">◇</div><div><h3>Формат PGD v1</h3><p>AES‑256‑GCM, PBKDF2‑SHA‑256, 600 000 итераций, уникальная соль и IV.</p></div><span class="secure-badge">АКТИВЕН</span></article>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="create-dialog" class="modal">
+      <form method="dialog" id="create-vault-form">
+        <div class="modal-head"><div><p class="step-label">НОВОЕ ХРАНИЛИЩЕ</p><h2>Создать защищённый сейф</h2></div><button class="modal-close" value="cancel" aria-label="Закрыть">×</button></div>
+        <p class="muted">Мастер‑пароль шифрует только этот файл. Мы не сможем его восстановить.</p>
+        <label class="field"><span>Название сейфа</span><input id="vault-name-input" type="text" maxlength="48" value="Мои пароли" required /></label>
+        <label class="field"><span>Мастер‑пароль</span><span class="input-wrap"><input id="master-password-input" type="password" minlength="12" autocomplete="new-password" required /><button type="button" class="reveal" data-reveal="master-password-input" aria-label="Показать пароль">○</button></span></label>
+        <div class="strength"><div><span></span><span></span><span></span><span></span></div><small id="strength-label">Минимум 12 символов</small></div>
+        <label class="field"><span>Повторите пароль</span><span class="input-wrap"><input id="master-confirm-input" type="password" minlength="12" autocomplete="new-password" required /><button type="button" class="reveal" data-reveal="master-confirm-input" aria-label="Показать пароль">○</button></span></label>
+        <p class="form-error" id="create-error" role="alert"></p>
+        <div class="modal-actions"><button class="btn btn-ghost" value="cancel">Отмена</button><button class="btn btn-primary" type="submit" value="default">Создать и сохранить .pgd</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="unlock-dialog" class="modal modal-small">
+      <form method="dialog" id="unlock-vault-form">
+        <div class="modal-head"><div><p class="step-label">ЗАШИФРОВАННЫЙ ФАЙЛ</p><h2>Введите мастер‑пароль</h2></div><button class="modal-close" value="cancel" aria-label="Закрыть">×</button></div>
+        <div class="file-chip"><span>PGD</span><div><strong id="pending-file-name">vault.pgd</strong><small id="pending-file-size">—</small></div></div>
+        <label class="field"><span>Мастер‑пароль файла</span><span class="input-wrap"><input id="unlock-password-input" type="password" autocomplete="current-password" required /><button type="button" class="reveal" data-reveal="unlock-password-input" aria-label="Показать пароль">○</button></span></label>
+        <p class="form-error" id="unlock-error" role="alert"></p>
+        <div class="modal-actions"><button class="btn btn-ghost" value="cancel">Отмена</button><button class="btn btn-primary" type="submit" value="default">Расшифровать</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="entry-dialog" class="modal">
+      <form method="dialog" id="entry-form">
+        <div class="modal-head"><div><p class="step-label">ЗАПИСЬ В СЕЙФЕ</p><h2 id="entry-dialog-title">Добавить пароль</h2></div><button class="modal-close" value="cancel" aria-label="Закрыть">×</button></div>
+        <input id="entry-id" type="hidden" />
+        <div class="form-grid">
+          <label class="field span-2"><span>Название сайта</span><input id="entry-title" type="text" maxlength="80" placeholder="Например, GitHub" required /></label>
+          <label class="field span-2"><span>Ссылка</span><input id="entry-url" type="text" inputmode="url" maxlength="400" placeholder="https://example.com" /></label>
+          <label class="field"><span>Username или email</span><input id="entry-username" type="text" maxlength="180" autocomplete="off" placeholder="name@example.com" required /></label>
+          <label class="field"><span>Номер телефона <em>необязательно</em></span><input id="entry-phone" type="tel" maxlength="40" autocomplete="off" placeholder="+48 000 000 000" /></label>
+          <label class="field span-2"><span>Пароль</span><span class="input-wrap"><input id="entry-password" type="password" maxlength="500" autocomplete="new-password" required /><button type="button" class="reveal" data-reveal="entry-password" aria-label="Показать пароль">○</button></span></label>
+        </div>
+        <div class="password-tools"><div class="strength compact"><div><span></span><span></span><span></span><span></span></div><small id="entry-strength-label">Надёжность пароля</small></div><button class="text-btn" type="button" id="generate-password-btn">Сгенерировать надёжный</button></div>
+        <label class="favorite-check"><input id="entry-favorite" type="checkbox" /><span>Добавить в избранное</span></label>
+        <p class="form-error" id="entry-error" role="alert"></p>
+        <div class="modal-actions split"><button class="btn btn-danger" type="button" id="delete-entry-btn">Удалить</button><span></span><button class="btn btn-ghost" value="cancel">Отмена</button><button class="btn btn-primary" type="submit" value="default">Сохранить запись</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="delete-dialog" class="modal modal-small">
+      <form method="dialog" id="delete-form">
+        <div class="danger-symbol">!</div>
+        <h2>Удалить эту запись?</h2>
+        <p class="muted">Действие нельзя отменить после сохранения нового файла .pgd.</p>
+        <div class="modal-actions"><button class="btn btn-ghost" value="cancel">Отмена</button><button class="btn btn-danger" type="submit" value="default">Удалить</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="app-lock-dialog" class="modal modal-small">
+      <form method="dialog" id="app-lock-form">
+        <div class="modal-head"><div><p class="step-label">ЛОКАЛЬНАЯ ЗАЩИТА</p><h2>Пароль приложения</h2></div><button class="modal-close" value="cancel" aria-label="Закрыть">×</button></div>
+        <p class="muted">Этот пароль блокирует интерфейс на данном устройстве. Файлы .pgd по‑прежнему защищены своими мастер‑паролями.</p>
+        <label class="field"><span>Новый пароль приложения</span><span class="input-wrap"><input id="new-app-password" type="password" minlength="8" autocomplete="new-password" /><button type="button" class="reveal" data-reveal="new-app-password" aria-label="Показать пароль">○</button></span></label>
+        <label class="field"><span>Повторите пароль</span><input id="confirm-app-password" type="password" minlength="8" autocomplete="new-password" /></label>
+        <p class="form-error" id="app-lock-error" role="alert"></p>
+        <div class="modal-actions split"><button class="btn btn-danger" type="button" id="remove-app-lock-btn">Удалить защиту</button><span></span><button class="btn btn-ghost" value="cancel">Отмена</button><button class="btn btn-primary" type="submit" value="default">Сохранить</button></div>
+      </form>
+    </dialog>
+
+    <div class="toast-region" id="toast-region" aria-live="polite"></div>
+    <script src="./app.js"></script>
+  </body>
+</html>

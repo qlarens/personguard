@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.22000.0</SupportedOSPlatformVersion>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>PersonGuard</AssemblyName>
+    <RootNamespace>PersonGuard.Desktop</RootNamespace>
+    <Version>2.0.0</Version>
+    <Authors>Clarence Everhart (qlarens)</Authors>
+    <Company>Clarence Everhart (qlarens)</Company>
+    <Product>PersonGuard</Product>
+    <Copyright>Copyright © 2026 Clarence Everhart (qlarens)</Copyright>
+    <PackageLicenseExpression>CC-BY-NC-ND-4.0</PackageLicenseExpression>
+    <Description>Local-first encrypted password vault for Windows.</Description>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <DebugType Condition="'$(Configuration)' == 'Debug'">embedded</DebugType>
+    <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
+    <Deterministic>true</Deterministic>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <SatelliteResourceLanguages>ru</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(PersonGuardInstallerBuild)' == 'true'">
+    <AssemblyName>PersonGuard-Setup</AssemblyName>
+    <DefineConstants>$(DefineConstants);PERSONGUARD_INSTALLER_BUILD</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.7.0" />
+    <EmbeddedResource Include="..\..\LICENSE" LogicalName="PersonGuard.LICENSE.txt" />
+  </ItemGroup>
+</Project>
