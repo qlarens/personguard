@@ -1,9 +1,9 @@
 # PersonGuard
 
-![Version](https://img.shields.io/badge/version-2.0.0-5b7cfa)
-![Windows](https://img.shields.io/badge/Windows-11%20x64-0078d4?logo=windows11)
-![Build](https://img.shields.io/badge/build-self--contained-2f855a)
-[![License](https://img.shields.io/badge/license-CC%20BY--NC--ND%204.0-lightgrey)](LICENSE)
+![Version](https://img.shields.io/badge/version-2.0.0-5b7cfa?style=for-the-badge)
+![Windows](https://img.shields.io/badge/Windows-11%20x64-0078d4?logo=windows11&style=for-the-badge)
+![Build](https://img.shields.io/badge/build-self--contained-2f855a?style=for-the-badge)
+[![License](https://img.shields.io/badge/license-CC%20BY--NC--ND%204.0-lightgrey?style=for-the-badge)](LICENSE)
 
 PersonGuard — локальный менеджер паролей для Windows 11. Это нативное WPF-приложение без аккаунта, сервера, телеметрии, WebView и сетевой синхронизации. Все данные сейфа хранятся в одном переносимом файле `.pgd` и расшифровываются только на устройстве после ввода мастер-пароля.
 
