@@ -33,25 +33,45 @@ public static class SecureStringUtil
     }
 }
 
+// CryptProtectMemory(SAME_PROCESS) keeps the key in the kernel: a memory dump read by another
+// process cannot be decrypted, unlike DPAPI CurrentUser whose entropy sat in the same memory.
 public sealed class ProtectedBytes : IDisposable
 {
-    private static readonly byte[] ProcessEntropy = RandomNumberGenerator.GetBytes(32);
+    private const uint SameProcess = 0;
+    private const int BlockSize = 16;
     private byte[]? _protected;
+    private readonly int _length;
 
-    private ProtectedBytes(byte[] protectedValue) => _protected = protectedValue;
+    private ProtectedBytes(byte[] protectedValue, int length) { _protected = protectedValue; _length = length; }
 
     public static ProtectedBytes FromBytes(ReadOnlySpan<byte> value)
     {
-        byte[] copy = value.ToArray();
-        try { return new ProtectedBytes(ProtectedData.Protect(copy, ProcessEntropy, DataProtectionScope.CurrentUser)); }
-        finally { CryptographicOperations.ZeroMemory(copy); }
+        // Pinned, so GC compaction cannot leave a plaintext copy behind before encryption.
+        byte[] buffer = GC.AllocateArray<byte>((value.Length / BlockSize + 1) * BlockSize, pinned: true);
+        value.CopyTo(buffer);
+        if (CryptProtectMemory(buffer, (uint)buffer.Length, SameProcess)) return new ProtectedBytes(buffer, value.Length);
+        CryptographicOperations.ZeroMemory(buffer);
+        throw new CryptographicException(Marshal.GetLastPInvokeError());
     }
 
     public byte[] Reveal()
     {
         byte[] protectedValue = _protected ?? throw new ObjectDisposedException(nameof(ProtectedBytes));
-        return ProtectedData.Unprotect(protectedValue, ProcessEntropy, DataProtectionScope.CurrentUser);
+        byte[] buffer = GC.AllocateArray<byte>(protectedValue.Length, pinned: true);
+        protectedValue.CopyTo(buffer, 0);
+        try
+        {
+            if (!CryptUnprotectMemory(buffer, (uint)buffer.Length, SameProcess)) throw new CryptographicException(Marshal.GetLastPInvokeError());
+            return buffer.AsSpan(0, _length).ToArray();
+        }
+        finally { CryptographicOperations.ZeroMemory(buffer); }
     }
+
+    [DllImport("crypt32.dll", SetLastError = true), DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static extern bool CryptProtectMemory(byte[] data, uint size, uint flags);
+
+    [DllImport("crypt32.dll", SetLastError = true), DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static extern bool CryptUnprotectMemory(byte[] data, uint size, uint flags);
 
     public void Dispose()
     {

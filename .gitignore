@@ -1,8 +1,27 @@
-.dotnet/
-.dotnet-install.ps1
+# Build output: PersonGuard.exe (~160 MB), checksum, test previews
+build/
 desktop/**/bin/
 desktop/**/obj/
-desktop/artifacts/*
-!desktop/artifacts/*.png
-.sites-runtime/
+
+# Local .NET SDK
+.dotnet/
+.dotnet-install.ps1
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Secrets: real vaults and their save temp files, app settings, signing keys, memory dumps
+*.pgd
+*.tmp
+*.pgcfg
+*.pfx
+*.p12
+*.dmp
+
+# OS
 desktop.ini
+Thumbs.db

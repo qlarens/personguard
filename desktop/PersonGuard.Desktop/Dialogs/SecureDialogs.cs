@@ -5,13 +5,14 @@ using System.Windows.Input;
 using System.Windows.Media;
 using PersonGuard.Desktop.Models;
 using PersonGuard.Desktop.Security;
+using PersonGuard.Desktop.Presentation;
 
 namespace PersonGuard.Desktop.Dialogs;
 
 public abstract class SecureDialogBase : Window
 {
     protected readonly StackPanel Body = new() { Margin = new Thickness(26) };
-    protected readonly TextBlock ErrorText = new() { Foreground = new SolidColorBrush(Color.FromRgb(255, 107, 130)), FontSize = 12, Margin = new Thickness(0, 10, 0, 0), TextWrapping = TextWrapping.Wrap };
+    protected readonly TextBlock ErrorText = new() { Foreground = new SolidColorBrush(Color.FromRgb(255, 107, 130)), FontSize = 13, Margin = new Thickness(0, 10, 0, 0), TextWrapping = TextWrapping.Wrap };
 
     protected SecureDialogBase(Window owner, string eyebrow, string title, string description, double width = 470)
     {
@@ -25,13 +26,14 @@ public abstract class SecureDialogBase : Window
         AllowsTransparency = true;
         Background = Brushes.Transparent;
         ShowInTaskbar = false;
-        FontFamily = new FontFamily("Segoe UI Variable Text, Segoe UI");
+        FontFamily = (FontFamily)Application.Current.Resources["AppFont"];
+        FontWeight = FontWeights.Normal;
         Foreground = Brushes.White;
 
         var border = new Border
         {
-            Background = new SolidColorBrush(Color.FromRgb(17, 23, 34)),
-            BorderBrush = new SolidColorBrush(Color.FromRgb(43, 54, 74)),
+            Background = (Brush)Application.Current.Resources["Panel"],
+            BorderBrush = (Brush)Application.Current.Resources["Line"],
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(16),
             Child = new ScrollViewer
@@ -42,26 +44,45 @@ public abstract class SecureDialogBase : Window
             },
         };
         Content = border;
+        Motion.SetEntrance(border, true);
 
         var header = new Grid();
         header.ColumnDefinitions.Add(new ColumnDefinition());
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var heading = new StackPanel();
-        heading.Children.Add(new TextBlock { Text = eyebrow, Foreground = new SolidColorBrush(Color.FromRgb(120, 150, 255)), FontSize = 10, FontWeight = FontWeights.Bold });
-        heading.Children.Add(new TextBlock { Text = title, FontFamily = new FontFamily("Segoe UI Variable Display, Segoe UI"), FontSize = 23, FontWeight = FontWeights.Bold, Margin = new Thickness(0, 7, 0, 0) });
+        heading.Children.Add(new TextBlock { Text = eyebrow, Foreground = (Brush)Application.Current.Resources["Blue"], FontSize = 11, FontWeight = FontWeights.Bold });
+        heading.Children.Add(new TextBlock { Text = title, FontFamily = FontFamily, FontSize = 25, FontWeight = FontWeights.Bold, Margin = new Thickness(0, 7, 0, 0) });
         header.Children.Add(heading);
         var close = Button("×", false);
+        close.Style = (Style)Application.Current.Resources["IconButton"];
+        close.MinHeight = 0;
         close.Width = close.Height = 32;
+        close.Margin = new Thickness(7, 0, 0, 0);
+        close.VerticalAlignment = VerticalAlignment.Top;
         close.Padding = new Thickness(0);
         close.Click += (_, _) => { DialogResult = false; Close(); };
         Grid.SetColumn(close, 1);
         header.Children.Add(close);
         Body.Children.Add(header);
-        Body.Children.Add(new TextBlock { Text = description, Foreground = new SolidColorBrush(Color.FromRgb(127, 138, 157)), FontSize = 13, TextWrapping = TextWrapping.Wrap, LineHeight = 21, Margin = new Thickness(0, 13, 0, 8) });
+        Body.Children.Add(new TextBlock { Text = description, Foreground = (Brush)Application.Current.Resources["Muted"], FontSize = 14, FontWeight = FontWeights.Light, TextWrapping = TextWrapping.Wrap, LineHeight = 21, Margin = new Thickness(0, 13, 0, 8) });
         PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) { DialogResult = false; Close(); } };
     }
 
-    protected static TextBlock Label(string text) => new() { Text = text, Foreground = new SolidColorBrush(Color.FromRgb(172, 181, 196)), FontSize = 12, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 13, 0, 7) };
+    protected static TextBlock Label(string text) => new() { Text = text, Foreground = new SolidColorBrush(Color.FromRgb(172, 181, 196)), FontSize = 13, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 13, 0, 7) };
+
+    protected override void OnClosed(EventArgs e)
+    {
+        // Successful callers take the password explicitly. Canceled dialogs have no consumer.
+        if (DialogResult != true) ClearInputs(Body);
+        base.OnClosed(e);
+
+        static void ClearInputs(DependencyObject node)
+        {
+            if (node is PasswordBox password) password.Clear();
+            if (node is TextBox text) text.Clear();
+            foreach (DependencyObject child in LogicalTreeHelper.GetChildren(node).OfType<DependencyObject>()) ClearInputs(child);
+        }
+    }
     protected static TextBox CreateTextInput(string text = "") => new() { Text = text, MinHeight = 42 };
     protected static PasswordBox PasswordInput() => new() { MinHeight = 42 };
 
@@ -105,7 +126,7 @@ public sealed class VaultCredentialsDialog : SecureDialogBase
         Body.Children.Add(_confirm);
         Body.Children.Add(ErrorText);
         var cancel = Button("Отмена", false);
-        var submit = Button(changePassword ? "Изменить" : "Создать PGD2", true);
+        var submit = Button(changePassword ? "Изменить" : "Создать сейф", true);
         cancel.Click += (_, _) => { DialogResult = false; Close(); };
         submit.Click += Submit;
         Body.Children.Add(Footer(cancel, submit));
@@ -178,7 +199,7 @@ public sealed class EntryDialog : SecureDialogBase
     private readonly TextBlock _authHint = new()
     {
         Foreground = new SolidColorBrush(Color.FromRgb(127, 138, 157)),
-        FontSize = 11,
+        FontSize = 12,
         TextWrapping = TextWrapping.Wrap,
         Margin = new Thickness(0, 7, 0, 0),
     };
@@ -206,11 +227,17 @@ public sealed class EntryDialog : SecureDialogBase
         Body.Children.Add(_authHint);
         var columns = new Grid();
         columns.ColumnDefinitions.Add(new ColumnDefinition()); columns.ColumnDefinitions.Add(new ColumnDefinition());
-        var left = new StackPanel { Margin = new Thickness(0, 0, 7, 0) };
-        _usernameLabel = Label("Username или email"); left.Children.Add(_usernameLabel); _username = CreateTextInput(existing?.Username ?? string.Empty); _username.MaxLength = 180; left.Children.Add(_username);
-        var right = new StackPanel { Margin = new Thickness(7, 0, 0, 0) };
-        right.Children.Add(Label("Телефон · необязательно")); _phone = CreateTextInput(existing?.Phone ?? string.Empty); _phone.MaxLength = 60; right.Children.Add(_phone);
-        columns.Children.Add(left); Grid.SetColumn(right, 1); columns.Children.Add(right); Body.Children.Add(columns);
+        columns.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        columns.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        _usernameLabel = Label("Username или email");
+        _usernameLabel.Margin = new Thickness(0, 13, 7, 7); columns.Children.Add(_usernameLabel);
+        var phoneLabel = Label("Телефон · необязательно");
+        phoneLabel.Margin = new Thickness(7, 13, 0, 7); Grid.SetColumn(phoneLabel, 1); columns.Children.Add(phoneLabel);
+        _username = CreateTextInput(existing?.Username ?? string.Empty); _username.MaxLength = 180;
+        _username.Margin = new Thickness(0, 0, 7, 0); Grid.SetRow(_username, 1); columns.Children.Add(_username);
+        _phone = CreateTextInput(existing?.Phone ?? string.Empty); _phone.MaxLength = 60;
+        _phone.Margin = new Thickness(7, 0, 0, 0); Grid.SetRow(_phone, 1); Grid.SetColumn(_phone, 1); columns.Children.Add(_phone);
+        Body.Children.Add(columns);
         _passwordLabel = Label(existing is null ? "Пароль" : "Новый пароль · необязательно");
         _passwordSection.Children.Add(_passwordLabel);
         var passwordInputs = new Grid();
