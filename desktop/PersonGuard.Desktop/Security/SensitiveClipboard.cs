@@ -19,6 +19,9 @@ public static class SensitiveClipboard
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool EmptyClipboard();
 
+    [DllImport("user32.dll")]
+    private static extern uint GetClipboardSequenceNumber();
+
     [DllImport("user32.dll", SetLastError = true)]
     private static extern nint SetClipboardData(uint format, nint memory);
 
@@ -37,8 +40,9 @@ public static class SensitiveClipboard
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern nint GlobalFree(nint memory);
 
-    public static bool TrySetText(Window owner, string value)
+    public static bool TrySetText(Window owner, string value, out uint sequence)
     {
+        sequence = 0;
         nint hwnd = new WindowInteropHelper(owner).EnsureHandle();
         for (int attempt = 0; attempt < 5; attempt++)
         {
@@ -51,18 +55,33 @@ public static class SensitiveClipboard
             try
             {
                 if (!EmptyClipboard()) return false;
-                if (!SetUnicodeText(value)) return false;
-
                 // These Windows-registered formats opt this item out of local history,
                 // cloud sync, and clipboard monitor processing.
-                SetZeroDword("CanIncludeInClipboardHistory");
-                SetZeroDword("CanUploadToCloudClipboard");
-                SetZeroDword("ExcludeClipboardContentFromMonitorProcessing");
+                // Install all protections before publishing text and fail closed.
+                if (!SetZeroDword("CanIncludeInClipboardHistory") ||
+                    !SetZeroDword("CanUploadToCloudClipboard") ||
+                    !SetZeroDword("ExcludeClipboardContentFromMonitorProcessing") ||
+                    !SetUnicodeText(value))
+                {
+                    EmptyClipboard();
+                    return false;
+                }
+                sequence = GetClipboardSequenceNumber();
+                if (sequence == 0) { EmptyClipboard(); return false; }
                 return true;
             }
             finally { CloseClipboard(); }
         }
         return false;
+    }
+
+    /// <summary>Atomically clear only our clipboard item, without reading its plaintext.</summary>
+    public static bool TryClear(Window owner, uint sequence)
+    {
+        if (sequence == 0) return true;
+        if (!OpenClipboard(new WindowInteropHelper(owner).EnsureHandle())) return false;
+        try { return GetClipboardSequenceNumber() != sequence || EmptyClipboard(); }
+        finally { CloseClipboard(); }
     }
 
     private static unsafe bool SetUnicodeText(string value)
@@ -84,12 +103,14 @@ public static class SensitiveClipboard
         return false;
     }
 
-    private static void SetZeroDword(string name)
+    private static bool SetZeroDword(string name)
     {
         uint format = RegisterClipboardFormat(name);
-        if (format == 0) return;
+        if (format == 0) return false;
         nint memory = GlobalAlloc(GmemMoveable | GmemZeroInit, sizeof(uint));
-        if (memory == 0) return;
-        if (SetClipboardData(format, memory) == 0) GlobalFree(memory);
+        if (memory == 0) return false;
+        if (SetClipboardData(format, memory) != 0) return true;
+        GlobalFree(memory);
+        return false;
     }
 }

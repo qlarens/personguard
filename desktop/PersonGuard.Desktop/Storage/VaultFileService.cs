@@ -8,10 +8,21 @@ public static class VaultFileService
 {
     public static async Task<byte[]> ReadAsync(string path, CancellationToken cancellationToken = default)
     {
-        var info = new FileInfo(path);
-        if (!info.Exists) throw new FileNotFoundException("Файл не найден.", path);
-        if (info.Length > 64L * 1024 * 1024) throw new InvalidDataException("Файл превышает безопасный лимит 64 МБ.");
-        return await File.ReadAllBytesAsync(path, cancellationToken);
+        // Check and read the same handle; deny writes/replacement while reading.
+        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read,
+            4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
+        if (stream.Length > 64L * 1024 * 1024) throw new InvalidDataException("Файл превышает безопасный лимит 64 МБ.");
+        byte[] data = new byte[checked((int)stream.Length)];
+        try
+        {
+            await stream.ReadExactlyAsync(data, cancellationToken);
+            return data;
+        }
+        catch
+        {
+            CryptographicOperations.ZeroMemory(data);
+            throw;
+        }
     }
 
     public static async Task SaveAtomicAsync(string path, VaultDocument vault, VaultSession session, CancellationToken cancellationToken = default)

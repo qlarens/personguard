@@ -10,36 +10,54 @@ public static class VaultSerializer
     public static byte[] Serialize(VaultDocument vault)
     {
         using var stream = new MemoryStream();
-        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = false });
-        writer.WriteStartObject();
-        writer.WriteNumber("schemaVersion", 2);
-        writer.WriteString("vaultId", vault.VaultId);
-        writer.WriteString("name", vault.Name);
-        writer.WriteString("createdAt", vault.CreatedAt);
-        writer.WriteString("updatedAt", vault.UpdatedAt);
-        writer.WriteStartArray("entries");
-        foreach (VaultEntry entry in vault.Entries)
+        try
         {
+            using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = false });
             writer.WriteStartObject();
-            writer.WriteString("id", entry.Id);
-            writer.WriteString("title", entry.Title);
-            writer.WriteString("url", entry.Url);
-            writer.WriteString("username", entry.Username);
-            writer.WriteString("authProvider", entry.AuthProvider);
-            byte[] secret = entry.Password.RevealUtf8();
-            try { writer.WriteString("password", secret); }
-            finally { CryptographicOperations.ZeroMemory(secret); }
-            writer.WriteString("phone", entry.Phone);
-            writer.WriteBoolean("favorite", entry.Favorite);
-            writer.WriteNumber("strength", entry.Strength);
-            writer.WriteString("createdAt", entry.CreatedAt);
-            writer.WriteString("updatedAt", entry.UpdatedAt);
+            writer.WriteNumber("schemaVersion", 2);
+            writer.WriteString("vaultId", vault.VaultId);
+            writer.WriteString("name", vault.Name);
+            writer.WriteString("createdAt", vault.CreatedAt);
+            writer.WriteString("updatedAt", vault.UpdatedAt);
+            if (vault.Policy is { } policy)
+            {
+                writer.WriteStartObject("policy");
+                writer.WriteBoolean("screenCaptureProtection", policy.ScreenCaptureProtection);
+                writer.WriteBoolean("clipboardEnabled", policy.ClipboardEnabled);
+                writer.WriteBoolean("lockOnFocusLoss", policy.LockOnFocusLoss);
+                writer.WriteNumber("autoLockMinutes", policy.AutoLockMinutes);
+                writer.WriteEndObject();
+            }
+            writer.WriteStartArray("entries");
+            foreach (VaultEntry entry in vault.Entries)
+            {
+                writer.WriteStartObject();
+                writer.WriteString("id", entry.Id);
+                writer.WriteString("title", entry.Title);
+                writer.WriteString("url", entry.Url);
+                writer.WriteString("username", entry.Username);
+                writer.WriteString("authProvider", entry.AuthProvider);
+                byte[] secret = entry.Password.RevealUtf8();
+                try { writer.WriteString("password", secret); }
+                finally { CryptographicOperations.ZeroMemory(secret); }
+                writer.WriteString("phone", entry.Phone);
+                writer.WriteBoolean("favorite", entry.Favorite);
+                writer.WriteNumber("strength", entry.Strength);
+                writer.WriteString("createdAt", entry.CreatedAt);
+                writer.WriteString("updatedAt", entry.UpdatedAt);
+                writer.WriteEndObject();
+            }
+            writer.WriteEndArray();
             writer.WriteEndObject();
+            writer.Flush();
+            return stream.ToArray();
         }
-        writer.WriteEndArray();
-        writer.WriteEndObject();
-        writer.Flush();
-        return stream.ToArray();
+        finally
+        {
+            // ToArray returns a copy; the stream's original plaintext must also be erased.
+            if (stream.TryGetBuffer(out ArraySegment<byte> buffer))
+                CryptographicOperations.ZeroMemory(buffer.AsSpan());
+        }
     }
 
     public static VaultDocument Deserialize(byte[] json)
@@ -58,13 +76,21 @@ public static class VaultSerializer
             Name = Clean(root, "name", 48, "Мои пароли"),
             CreatedAt = ReadDate(root, "createdAt"),
             UpdatedAt = ReadDate(root, "updatedAt"),
+            Policy = root.TryGetProperty("policy", out JsonElement policy) && policy.ValueKind == JsonValueKind.Object
+                ? new VaultPolicy(
+                    !(policy.TryGetProperty("screenCaptureProtection", out JsonElement capture) && capture.ValueKind == JsonValueKind.False),
+                    ReadBool(policy, "clipboardEnabled"),
+                    ReadBool(policy, "lockOnFocusLoss"),
+                    AppSecuritySettings.NormalizeAutoLock(policy.TryGetProperty("autoLockMinutes", out JsonElement minutes) &&
+                        minutes.ValueKind == JsonValueKind.Number && minutes.TryGetInt32(out int value) ? value : 3))
+                : null,
         };
 
         try
         {
             foreach (JsonElement item in entries.EnumerateArray())
             {
-                string password = Clean(item, "password", 1000, string.Empty);
+                string password = Clean(item, "password", 1000, string.Empty, rejectOversize: true);
                 string title = Clean(item, "title", 80, string.Empty);
                 string username = Clean(item, "username", 180, string.Empty);
                 string phone = Clean(item, "phone", 60, string.Empty);
@@ -99,10 +125,12 @@ public static class VaultSerializer
         }
     }
 
-    private static string Clean(JsonElement element, string property, int max, string fallback)
+    private static string Clean(JsonElement element, string property, int max, string fallback, bool rejectOversize = false)
     {
         if (!element.TryGetProperty(property, out JsonElement value) || value.ValueKind != JsonValueKind.String) return fallback;
         string text = value.GetString() ?? fallback;
+        if (rejectOversize && text.Length > max)
+            throw new InvalidDataException("Пароль в файле превышает допустимую длину. Данные не были изменены.");
         return text.Length <= max ? text : text[..max];
     }
 

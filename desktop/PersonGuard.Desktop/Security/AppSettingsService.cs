@@ -12,11 +12,29 @@ public sealed class AppSecuritySettings
     public bool WindowsHelloEnabled { get; set; }
     public bool ClipboardEnabled { get; set; }
     public bool ScreenCaptureProtection { get; set; } = true;
-    public bool LockOnMinimize { get; set; } = true;
     public bool LockOnFocusLoss { get; set; }
-    public bool ReauthenticateSecrets { get; set; } = true;
     public int AutoLockMinutes { get; set; } = 3;
+
+    public static int NormalizeAutoLock(int minutes) => minutes is 0 or 1 or 3 or 5 or 15 ? minutes : 3;
+
+    public VaultPolicy ToPolicy() => new(ScreenCaptureProtection, ClipboardEnabled, LockOnFocusLoss, AutoLockMinutes);
+
+    /// <summary>Local settings and the open vault's authenticated policy can only tighten each other.</summary>
+    public void Tighten(VaultPolicy policy)
+    {
+        ScreenCaptureProtection |= policy.ScreenCaptureProtection;
+        ClipboardEnabled &= policy.ClipboardEnabled;
+        LockOnFocusLoss |= policy.LockOnFocusLoss;
+        if (AutoLockMinutes == 0 || (policy.AutoLockMinutes != 0 && policy.AutoLockMinutes < AutoLockMinutes))
+            AutoLockMinutes = policy.AutoLockMinutes;
+    }
 }
+
+/// <summary>
+/// Copy of the protection settings stored inside the encrypted vault. The local DPAPI settings file
+/// is writable by any same-user process, so it alone must not be able to weaken an open vault.
+/// </summary>
+public sealed record VaultPolicy(bool ScreenCaptureProtection, bool ClipboardEnabled, bool LockOnFocusLoss, int AutoLockMinutes);
 
 public sealed class AppSettingsService
 {
@@ -69,12 +87,17 @@ public sealed class AppSettingsService
     public void Save()
     {
         byte[] json = JsonSerializer.SerializeToUtf8Bytes(Settings);
-        byte[] protectedData = ProtectedData.Protect(json, Entropy, DataProtectionScope.CurrentUser);
-        CryptographicOperations.ZeroMemory(json);
-        string temp = _path + ".tmp";
+        byte[] protectedData = [];
+        string temp = _path + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
         {
-            File.WriteAllBytes(temp, protectedData);
+            try { protectedData = ProtectedData.Protect(json, Entropy, DataProtectionScope.CurrentUser); }
+            finally { CryptographicOperations.ZeroMemory(json); }
+            using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
+            {
+                stream.Write(protectedData);
+                stream.Flush(flushToDisk: true);
+            }
             File.Move(temp, _path, overwrite: true);
         }
         finally
@@ -94,13 +117,17 @@ public sealed class AppSettingsService
             protectedData = File.ReadAllBytes(_path);
             plain = ProtectedData.Unprotect(protectedData, Entropy, DataProtectionScope.CurrentUser);
             AppSecuritySettings? loaded = JsonSerializer.Deserialize<AppSecuritySettings>(plain);
-            if (loaded is null) return new AppSecuritySettings();
-            loaded.AutoLockMinutes = loaded.AutoLockMinutes is 0 or 1 or 3 or 5 or 15 ? loaded.AutoLockMinutes : 3;
+            if (loaded is null || loaded.AppPasswordSalt is null || loaded.AppPasswordHash is null ||
+                (loaded.AppPasswordEnabled && (loaded.AppPasswordSalt.Length != 16 || loaded.AppPasswordHash.Length != 32)) ||
+                (loaded.WindowsHelloEnabled && !loaded.AppPasswordEnabled))
+                throw new InvalidDataException("Некорректные настройки защиты.");
+            loaded.AutoLockMinutes = AppSecuritySettings.NormalizeAutoLock(loaded.AutoLockMinutes);
             return loaded;
         }
-        catch
+        catch (Exception error) when (error is CryptographicException or JsonException or IOException or UnauthorizedAccessException)
         {
-            return new AppSecuritySettings();
+            // Existing but unreadable security settings must never disable the app gate.
+            throw new InvalidDataException("Не удалось прочитать настройки защиты. Запуск остановлен; файл security.pgcfg сохранён. Восстановите его из резервной копии для этого пользователя Windows.", error);
         }
         finally
         {

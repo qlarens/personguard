@@ -1,6 +1,5 @@
 using System.Threading;
 using System.Windows;
-using PersonGuard.Desktop.Installation;
 using PersonGuard.Desktop.Security;
 
 namespace PersonGuard.Desktop;
@@ -8,6 +7,7 @@ namespace PersonGuard.Desktop;
 public partial class App : Application
 {
     private Mutex? _singleInstance;
+    private bool _ownsMutex;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -21,29 +21,6 @@ public partial class App : Application
                 Current.Dispatcher.Invoke(() => MessageBox.Show("PersonGuard завершил работу из-за внутренней ошибки. Сейф удалён из памяти.", "PersonGuard", MessageBoxButton.OK, MessageBoxImage.Error));
         };
 
-        if (InstallerService.IsUninstallRequest(e.Args, out bool quiet))
-        {
-            UninstallResult result = InstallerService.Uninstall(quiet);
-            if (!quiet && result.Outcome != UninstallOutcome.Canceled)
-            {
-                MessageBox.Show(
-                    result.Message,
-                    "Удаление PersonGuard",
-                    MessageBoxButton.OK,
-                    result.Outcome == UninstallOutcome.Success ? MessageBoxImage.Information : MessageBoxImage.Error);
-            }
-
-            Shutdown(result.Outcome == UninstallOutcome.Failure ? 1 : 0);
-            return;
-        }
-
-        if (InstallerService.IsSetupRequest(e.Args))
-        {
-            MainWindow = new InstallerWindow();
-            MainWindow.Show();
-            return;
-        }
-
         _singleInstance = new Mutex(true, "Local\\PersonGuard.Desktop.Singleton", out bool createdNew);
         if (!createdNew)
         {
@@ -51,14 +28,23 @@ public partial class App : Application
             Shutdown();
             return;
         }
+        _ownsMutex = true;
 
-        MainWindow = new MainWindow();
-        MainWindow.Show();
+        try
+        {
+            MainWindow = new MainWindow();
+            MainWindow.Show();
+        }
+        catch (InvalidDataException error)
+        {
+            MessageBox.Show(error.Message, "PersonGuard — настройки защиты недоступны", MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown(1);
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
-        _singleInstance?.ReleaseMutex();
+        if (_ownsMutex) _singleInstance?.ReleaseMutex();
         _singleInstance?.Dispose();
         base.OnExit(e);
     }

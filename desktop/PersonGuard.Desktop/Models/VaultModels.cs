@@ -17,6 +17,7 @@ public sealed class VaultDocument : IDisposable
     public string Name { get; set; } = "Мои пароли";
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public VaultPolicy? Policy { get; set; }
     public ObservableCollection<VaultEntry> Entries { get; } = [];
 
     public void Dispose()
