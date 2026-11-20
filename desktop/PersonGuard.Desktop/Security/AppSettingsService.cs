@@ -14,10 +14,13 @@ public sealed class AppSecuritySettings
     public bool ScreenCaptureProtection { get; set; } = true;
     public bool LockOnFocusLoss { get; set; }
     public int AutoLockMinutes { get; set; } = 3;
+    /// <summary>Minutes a confirmation keeps covering reveals and copies; 0 asks every time.</summary>
+    public int ConfirmMinutes { get; set; } = 5;
 
     public static int NormalizeAutoLock(int minutes) => minutes is 0 or 1 or 3 or 5 or 15 ? minutes : 3;
+    public static int NormalizeConfirm(int minutes) => minutes is 0 or 1 or 5 or 15 ? minutes : 5;
 
-    public VaultPolicy ToPolicy() => new(ScreenCaptureProtection, ClipboardEnabled, LockOnFocusLoss, AutoLockMinutes);
+    public VaultPolicy ToPolicy() => new(ScreenCaptureProtection, ClipboardEnabled, LockOnFocusLoss, AutoLockMinutes, ConfirmMinutes);
 
     /// <summary>Local settings and the open vault's authenticated policy can only tighten each other.</summary>
     public void Tighten(VaultPolicy policy)
@@ -27,6 +30,7 @@ public sealed class AppSecuritySettings
         LockOnFocusLoss |= policy.LockOnFocusLoss;
         if (AutoLockMinutes == 0 || (policy.AutoLockMinutes != 0 && policy.AutoLockMinutes < AutoLockMinutes))
             AutoLockMinutes = policy.AutoLockMinutes;
+        ConfirmMinutes = Math.Min(ConfirmMinutes, policy.ConfirmMinutes);
     }
 }
 
@@ -34,7 +38,7 @@ public sealed class AppSecuritySettings
 /// Copy of the protection settings stored inside the encrypted vault. The local DPAPI settings file
 /// is writable by any same-user process, so it alone must not be able to weaken an open vault.
 /// </summary>
-public sealed record VaultPolicy(bool ScreenCaptureProtection, bool ClipboardEnabled, bool LockOnFocusLoss, int AutoLockMinutes);
+public sealed record VaultPolicy(bool ScreenCaptureProtection, bool ClipboardEnabled, bool LockOnFocusLoss, int AutoLockMinutes, int ConfirmMinutes);
 
 public sealed class AppSettingsService
 {
@@ -122,6 +126,7 @@ public sealed class AppSettingsService
                 (loaded.WindowsHelloEnabled && !loaded.AppPasswordEnabled))
                 throw new InvalidDataException("Некорректные настройки защиты.");
             loaded.AutoLockMinutes = AppSecuritySettings.NormalizeAutoLock(loaded.AutoLockMinutes);
+            loaded.ConfirmMinutes = AppSecuritySettings.NormalizeConfirm(loaded.ConfirmMinutes);
             return loaded;
         }
         catch (Exception error) when (error is CryptographicException or JsonException or IOException or UnauthorizedAccessException)

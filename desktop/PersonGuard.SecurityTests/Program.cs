@@ -139,7 +139,7 @@ await RunAsync("Vault protection policy round-trips and only tightens local sett
 {
     using SecureString master = Secure("Policy Master Password! 2026");
     using var vault = TestVault();
-    vault.Policy = new VaultPolicy(true, false, true, 1);
+    vault.Policy = new VaultPolicy(true, false, true, 1, 1);
     using VaultSession session = PgdCryptoService.CreateSession(master);
     byte[] encrypted = PgdCryptoService.Encrypt(vault, session);
     try
@@ -149,13 +149,16 @@ await RunAsync("Vault protection policy round-trips and only tightens local sett
         using (opened.Session)
         {
             Assert(opened.Vault.Policy == vault.Policy, "Policy changed after round-trip.");
-            var tampered = new AppSecuritySettings { ScreenCaptureProtection = false, ClipboardEnabled = true, LockOnFocusLoss = false, AutoLockMinutes = 0 };
+            var tampered = new AppSecuritySettings { ScreenCaptureProtection = false, ClipboardEnabled = true, LockOnFocusLoss = false, AutoLockMinutes = 0, ConfirmMinutes = 15 };
             tampered.Tighten(opened.Vault.Policy!);
             Assert(tampered.ToPolicy() == vault.Policy, "Tampered local settings weakened the vault policy.");
         }
-        var strict = new AppSecuritySettings { AutoLockMinutes = 1 };
-        strict.Tighten(new VaultPolicy(false, true, false, 0));
-        Assert(strict.ToPolicy() == new VaultPolicy(true, false, false, 1), "Vault policy loosened local settings.");
+        var strict = new AppSecuritySettings { AutoLockMinutes = 1, ConfirmMinutes = 0 };
+        strict.Tighten(new VaultPolicy(false, true, false, 0, 15));
+        Assert(strict.ToPolicy() == new VaultPolicy(true, false, false, 1, 0), "Vault policy loosened local settings.");
+        // A missing (2.1.0 vaults) or invalid confirmMinutes falls back to the default window.
+        using VaultDocument legacy = VaultSerializer.Deserialize("{\"entries\":[],\"policy\":{\"autoLockMinutes\":1,\"confirmMinutes\":7}}"u8.ToArray());
+        Assert(legacy.Policy == new VaultPolicy(true, false, false, 1, 5), "Invalid confirmMinutes was not normalized.");
     }
     finally { CryptographicOperations.ZeroMemory(encrypted); }
     await Task.CompletedTask;
@@ -628,6 +631,19 @@ await RunAsync("WPF views render and locking invalidates sensitive operations", 
             int epoch = (int)epochField.GetValue(window)!;
             Assert((bool)guard.Invoke(window, new object[] { previewSession, epoch })!, "Current session rejected.");
             Assert(!(bool)guard.Invoke(window, new object[] { previewSession, epoch - 1 })!, "Stale authorization epoch accepted.");
+
+            // Opening the vault starts the confirmation window; any lock epoch change or a 0-minute setting ends it.
+            var recent = typeof(PersonGuard.Desktop.MainWindow).GetMethod("HasRecentConfirmation", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var startWindow = typeof(PersonGuard.Desktop.MainWindow).GetMethod("StartConfirmationWindow", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var windowSettings = ((AppSettingsService)typeof(PersonGuard.Desktop.MainWindow).GetField("_settingsService", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!).Settings;
+            Assert((bool)recent.Invoke(window, null)!, "Opening the vault did not start the confirmation window.");
+            epochField.SetValue(window, epoch + 1);
+            Assert(!(bool)recent.Invoke(window, null)!, "Confirmation survived a lock.");
+            epochField.SetValue(window, epoch);
+            windowSettings.ConfirmMinutes = 0;
+            startWindow.Invoke(window, null);
+            Assert(!(bool)recent.Invoke(window, null)!, "\"Every time\" setting still skipped confirmation.");
+            windowSettings.ConfirmMinutes = 5;
             previewVault.Entries[0].PasswordDisplay = "TEST-REVEALED-SECRET";
             previewVault.Entries[1].Id = previewVault.Entries[0].Id;
             previewVault.Entries[1].PasswordDisplay = "TEST-SECOND-REVEALED-SECRET";

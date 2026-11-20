@@ -26,6 +26,7 @@ public static class VaultSerializer
                 writer.WriteBoolean("clipboardEnabled", policy.ClipboardEnabled);
                 writer.WriteBoolean("lockOnFocusLoss", policy.LockOnFocusLoss);
                 writer.WriteNumber("autoLockMinutes", policy.AutoLockMinutes);
+                writer.WriteNumber("confirmMinutes", policy.ConfirmMinutes);
                 writer.WriteEndObject();
             }
             writer.WriteStartArray("entries");
@@ -81,8 +82,8 @@ public static class VaultSerializer
                     !(policy.TryGetProperty("screenCaptureProtection", out JsonElement capture) && capture.ValueKind == JsonValueKind.False),
                     ReadBool(policy, "clipboardEnabled"),
                     ReadBool(policy, "lockOnFocusLoss"),
-                    AppSecuritySettings.NormalizeAutoLock(policy.TryGetProperty("autoLockMinutes", out JsonElement minutes) &&
-                        minutes.ValueKind == JsonValueKind.Number && minutes.TryGetInt32(out int value) ? value : 3))
+                    AppSecuritySettings.NormalizeAutoLock(ReadInt(policy, "autoLockMinutes", 3)),
+                    AppSecuritySettings.NormalizeConfirm(ReadInt(policy, "confirmMinutes", 5)))
                 : null,
         };
 
@@ -133,6 +134,9 @@ public static class VaultSerializer
             throw new InvalidDataException("Пароль в файле превышает допустимую длину. Данные не были изменены.");
         return text.Length <= max ? text : text[..max];
     }
+
+    private static int ReadInt(JsonElement element, string property, int fallback) =>
+        element.TryGetProperty(property, out JsonElement value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out int number) ? number : fallback;
 
     private static bool ReadBool(JsonElement element, string property) =>
         element.TryGetProperty(property, out JsonElement value) && value.ValueKind == JsonValueKind.True;

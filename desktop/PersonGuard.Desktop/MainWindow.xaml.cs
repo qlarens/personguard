@@ -68,6 +68,8 @@ public partial class MainWindow : Window
     private double _graphWorldHeight;
     private Rect _graphContentBounds = Rect.Empty;
     private uint _clipboardSequence;
+    private DateTimeOffset _confirmedUntil;
+    private int _confirmedEpoch = -1;
     private readonly DispatcherTimer _clipboardTimer = new();
 
     public MainWindow() : this(new AppSettingsService()) { }
@@ -259,6 +261,7 @@ public partial class MainWindow : Window
         if (vault.Policy is { } policy) Settings.Tighten(policy);
         vault.Policy = Settings.ToPolicy();
         NativeSecurity.SetCaptureProtection(this, Settings.ScreenCaptureProtection);
+        StartConfirmationWindow(); // Opening the vault was itself a full confirmation.
         _filePath = path;
         _dirty = dirty;
         _filter = "all";
@@ -424,14 +427,15 @@ public partial class MainWindow : Window
         string value = entry.Password.RevealForDisplay();
         CopyWithAutoClear(value);
     }
-    private async void CopyUsername_Click(object sender, RoutedEventArgs e)
+    // Username and phone are shown on the card in plain text: re-confirming them protects nothing.
+    private void CopyUsername_Click(object sender, RoutedEventArgs e)
     {
-        if ((sender as Button)?.Tag is VaultEntry entry && Settings.ClipboardEnabled && await ReauthenticateSecretAsync("Скопировать username") && IsCurrentEntry(entry) && Settings.ClipboardEnabled) CopyWithAutoClear(entry.Username);
+        if ((sender as Button)?.Tag is VaultEntry entry && Settings.ClipboardEnabled && IsCurrentEntry(entry)) CopyWithAutoClear(entry.Username);
         else if (!Settings.ClipboardEnabled) MessageBox.Show(this, "Копирование отключено строгим режимом.", "PersonGuard", MessageBoxButton.OK, MessageBoxImage.Information);
     }
-    private async void CopyPhone_Click(object sender, RoutedEventArgs e)
+    private void CopyPhone_Click(object sender, RoutedEventArgs e)
     {
-        if ((sender as Button)?.Tag is VaultEntry entry && Settings.ClipboardEnabled && await ReauthenticateSecretAsync("Скопировать телефон") && IsCurrentEntry(entry) && Settings.ClipboardEnabled) CopyWithAutoClear(entry.Phone);
+        if ((sender as Button)?.Tag is VaultEntry entry && Settings.ClipboardEnabled && IsCurrentEntry(entry)) CopyWithAutoClear(entry.Phone);
         else if (!Settings.ClipboardEnabled) MessageBox.Show(this, "Копирование отключено строгим режимом.", "PersonGuard", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
@@ -469,7 +473,27 @@ public partial class MainWindow : Window
     private bool IsCurrentSession(VaultSession session, int epoch) =>
         !_locking && _session == session && _securityEpoch == epoch;
 
+    // One confirmation covers reveals and copies for Settings.ConfirmMinutes. Every lock, Windows lock
+    // or vault switch bumps _securityEpoch and ends the window; masterPasswordOnly actions never use it.
+    private bool HasRecentConfirmation() =>
+        !_locking && _session is not null && _confirmedEpoch == _securityEpoch && DateTimeOffset.UtcNow < _confirmedUntil;
+
+    private void StartConfirmationWindow()
+    {
+        _confirmedEpoch = _securityEpoch;
+        _confirmedUntil = DateTimeOffset.UtcNow.AddMinutes(Settings.ConfirmMinutes);
+    }
+
     private async Task<bool> ReauthenticateSecretAsync(string action, bool masterPasswordOnly = false)
+    {
+        if (!masterPasswordOnly && HasRecentConfirmation()) return true;
+        int epoch = _securityEpoch;
+        bool confirmed = await VerifyUserAsync(action, masterPasswordOnly);
+        if (confirmed && epoch == _securityEpoch) StartConfirmationWindow();
+        return confirmed;
+    }
+
+    private async Task<bool> VerifyUserAsync(string action, bool masterPasswordOnly)
     {
         if (_session is not { } session || _locking) return false;
         int epoch = _securityEpoch;
@@ -959,6 +983,13 @@ public partial class MainWindow : Window
         Settings.AutoLockMinutes = minutes; _settingsService.Save(); SyncVaultPolicy(); _lastActivity = DateTimeOffset.UtcNow;
     }
 
+    private void ConfirmCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loadingSettings || ConfirmCombo.SelectedItem is not ComboBoxItem item || !int.TryParse(item.Tag?.ToString(), out int minutes)) return;
+        Settings.ConfirmMinutes = minutes; _settingsService.Save(); SyncVaultPolicy();
+        _confirmedEpoch = -1; // A new value applies from the next confirmation.
+    }
+
     private void SyncVaultPolicy()
     {
         if (_vault is null) return;
@@ -1082,6 +1113,8 @@ public partial class MainWindow : Window
             FocusLockCheck.IsChecked = Settings.LockOnFocusLoss;
             foreach (ComboBoxItem item in AutoLockCombo.Items)
                 if (item.Tag?.ToString() == Settings.AutoLockMinutes.ToString()) { AutoLockCombo.SelectedItem = item; break; }
+            foreach (ComboBoxItem item in ConfirmCombo.Items)
+                if (item.Tag?.ToString() == Settings.ConfirmMinutes.ToString()) { ConfirmCombo.SelectedItem = item; break; }
         }
         finally { _loadingSettings = false; }
     }
